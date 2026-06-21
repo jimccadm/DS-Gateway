@@ -11,6 +11,7 @@ PORT="8787"
 CLONE_MODE="ask"
 BUILD_DS4="ask"
 START_AFTER="0"
+DRY_RUN="0"
 
 usage() {
   cat <<USAGE
@@ -23,16 +24,20 @@ Options:
   --ds4-root PATH   Path to an existing or desired antirez/ds4 checkout.
                     Default: ../ds4 next to this DS Gateway checkout.
   --clone-ds4       Clone antirez/ds4 if it is missing.
+                    Still asks for confirmation before cloning.
   --no-clone        Do not clone; fail if ds4 is missing.
   --build-ds4       Run "make ds4-server" in the ds4 checkout.
+                    Still asks for confirmation before building.
   --no-build        Do not offer to build ds4-server.
+  --dry-run         Print planned actions without changing files.
   --host HOST       DS Gateway host. Default: 127.0.0.1.
   --port PORT       DS Gateway port. Default: 8787.
   --start           Start DS Gateway after setup.
+                    Still asks for confirmation before starting.
   -h, --help        Show this help.
 
-This installer does not modify DS4 source code. It only checks/clones DS4,
-prepares DS Gateway runtime folders, and writes a local launcher under data/.
+This installer does not modify DS4 source code. It asks before cloning DS4,
+building DS4, or starting DS Gateway.
 USAGE
 }
 
@@ -79,6 +84,29 @@ ask_yes_no() {
     y|Y|yes|YES) return 0 ;;
     *) return 1 ;;
   esac
+}
+
+confirm_action() {
+  local prompt="$1"
+  local default="${2:-n}"
+  if ask_yes_no "$prompt" "$default"; then
+    return 0
+  fi
+  return 1
+}
+
+run_cmd() {
+  if [ "$DRY_RUN" = "1" ]; then
+    printf '[dry-run] %q' "$1"
+    shift
+    local arg
+    for arg in "$@"; do
+      printf ' %q' "$arg"
+    done
+    printf '\n'
+    return 0
+  fi
+  "$@"
 }
 
 need_command() {
@@ -150,6 +178,10 @@ while [ "$#" -gt 0 ]; do
       BUILD_DS4="no"
       shift
       ;;
+    --dry-run)
+      DRY_RUN="1"
+      shift
+      ;;
     --host)
       [ "${2:-}" ] || die "--host requires a value"
       HOST="$2"
@@ -191,9 +223,13 @@ else
   if [ "$CLONE_MODE" = "no" ]; then
     die "Clone DS4 first, or rerun with --clone-ds4."
   fi
-  if [ "$CLONE_MODE" = "yes" ] || ask_yes_no "Clone antirez/ds4 into $DS4_ROOT?" "y"; then
-    mkdir -p "$(dirname "$DS4_ROOT")"
-    git clone "$DS4_REPO_URL" "$DS4_ROOT"
+  clone_default="n"
+  if [ "$CLONE_MODE" = "yes" ]; then
+    clone_default="y"
+  fi
+  if confirm_action "Clone antirez/ds4 into $DS4_ROOT?" "$clone_default"; then
+    run_cmd mkdir -p "$(dirname "$DS4_ROOT")"
+    run_cmd git clone "$DS4_REPO_URL" "$DS4_ROOT"
     log "Cloned antirez/ds4 into $DS4_ROOT"
   else
     die "DS4 is required. Clone it with: git clone $DS4_REPO_URL $DS4_ROOT"
@@ -206,18 +242,27 @@ if [ "$(ds4_remote_label "$DS4_ROOT")" != "antirez/ds4" ]; then
   warn "DS4 files are present, but the Git remote is not antirez/ds4. Continuing with local checkout."
 fi
 
-mkdir -p "$APP_DIR/data/server-kv"
-chmod 700 "$APP_DIR/data" 2>/dev/null || true
-log "Prepared runtime data directory at $APP_DIR/data"
+run_cmd mkdir -p "$APP_DIR/data/server-kv"
+if [ "$DRY_RUN" = "1" ]; then
+  info "Would chmod 700 $APP_DIR/data"
+  info "Would prepare runtime data directory at $APP_DIR/data"
+else
+  chmod 700 "$APP_DIR/data" 2>/dev/null || true
+  log "Prepared runtime data directory at $APP_DIR/data"
+fi
 
 if [ -x "$DS4_ROOT/ds4-server" ]; then
   log "DS4 server binary already exists: $DS4_ROOT/ds4-server"
 else
   warn "DS4 server binary is not built yet."
-  if [ "$BUILD_DS4" = "yes" ] || { [ "$BUILD_DS4" = "ask" ] && ask_yes_no "Build ds4-server now?" "n"; }; then
+  build_default="n"
+  if [ "$BUILD_DS4" = "yes" ]; then
+    build_default="y"
+  fi
+  if [ "$BUILD_DS4" != "no" ] && confirm_action "Build ds4-server now with DS4 Makefile?" "$build_default"; then
     need_command make
     info "Building ds4-server with DS4 Makefile..."
-    make -C "$DS4_ROOT" ds4-server
+    run_cmd make -C "$DS4_ROOT" ds4-server
     log "Built ds4-server"
   else
     info "Skipping build. DS Gateway can build ds4-server later when you click Start."
@@ -225,14 +270,18 @@ else
 fi
 
 LAUNCHER="$APP_DIR/data/run-ds-gateway.sh"
-cat >"$LAUNCHER" <<EOF
+if [ "$DRY_RUN" = "1" ]; then
+  info "Would write local launcher: $LAUNCHER"
+else
+  cat >"$LAUNCHER" <<EOF
 #!/usr/bin/env bash
 set -euo pipefail
 cd "$APP_DIR"
 exec python3 "$APP_DIR/ds4_ui.py" --ds4-root "$DS4_ROOT" --host "$HOST" --port "$PORT" "\$@"
 EOF
-chmod +x "$LAUNCHER"
-log "Wrote local launcher: $LAUNCHER"
+  chmod +x "$LAUNCHER"
+  log "Wrote local launcher: $LAUNCHER"
+fi
 
 cat <<SUMMARY
 
@@ -256,5 +305,7 @@ First model setup:
 SUMMARY
 
 if [ "$START_AFTER" = "1" ]; then
-  exec "$LAUNCHER"
+  if confirm_action "Start DS Gateway now on http://$HOST:$PORT?" "y"; then
+    exec "$LAUNCHER"
+  fi
 fi

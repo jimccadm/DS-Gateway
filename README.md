@@ -17,6 +17,13 @@ The installer checks for an `antirez/ds4` checkout, offers to clone it if it is
 missing, prepares DS Gateway runtime folders, and writes a local launcher under
 `data/run-ds-gateway.sh`.
 
+The installer asks before cloning DS4, building DS4, or starting DS Gateway. To
+preview actions without changing files, run:
+
+```sh
+./install.sh --dry-run
+```
+
 After setup, run DS Gateway from this directory:
 
 ```sh
