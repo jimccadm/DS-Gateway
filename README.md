@@ -8,6 +8,14 @@ engine that loads and serves DeepSeek V4 Flash/PRO. DS Gateway exists because
 DS4 makes powerful local inference possible; this project simply adds a
 separate, preservation-friendly UI and gateway around it.
 
+## Project Status
+
+DS Gateway is a work in progress. It is being built iteratively as a practical
+companion UI for DS4, so expect rough edges, fast-moving features, and changes
+as the DS4 ecosystem evolves.
+
+This project was written with Codex 5.5 as an AI coding companion.
+
 DS Gateway does not modify DS4 source code. It talks to DS4 through its existing
 surfaces:
 
