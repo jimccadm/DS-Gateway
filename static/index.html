@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DS Gateway</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="mark">D</div>
+      <div>
+        <strong>DS Gateway</strong>
+        <span id="server-pill">offline</span>
+      </div>
+    </div>
+    <button id="new-chat" class="primary">New chat</button>
+    <button id="settings-nav" class="nav-button" title="Settings">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"></path>
+        <path d="M19.4 15a1.8 1.8 0 0 0 .36 1.98l.04.04a2.1 2.1 0 0 1-2.97 2.97l-.04-.04a1.8 1.8 0 0 0-1.98-.36 1.8 1.8 0 0 0-1.1 1.65V21a2.1 2.1 0 0 1-4.2 0v-.06a1.8 1.8 0 0 0-1.08-1.65 1.8 1.8 0 0 0-1.99.36l-.04.04a2.1 2.1 0 1 1-2.97-2.97l.04-.04A1.8 1.8 0 0 0 4.6 15a1.8 1.8 0 0 0-1.65-1.08H2.9a2.1 2.1 0 0 1 0-4.2h.06A1.8 1.8 0 0 0 4.6 8.64a1.8 1.8 0 0 0-.36-1.99l-.04-.04a2.1 2.1 0 1 1 2.97-2.97l.04.04a1.8 1.8 0 0 0 1.98.36A1.8 1.8 0 0 0 10.3 2.4V2.1a2.1 2.1 0 0 1 4.2 0v.06a1.8 1.8 0 0 0 1.1 1.65 1.8 1.8 0 0 0 1.98-.36l.04-.04a2.1 2.1 0 0 1 2.97 2.97l-.04.04a1.8 1.8 0 0 0-.36 1.98 1.8 1.8 0 0 0 1.65 1.1h.06a2.1 2.1 0 0 1 0 4.2h-.06A1.8 1.8 0 0 0 19.4 15Z"></path>
+      </svg>
+      <span>Settings</span>
+    </button>
+    <div id="conversation-list" class="conversation-list"></div>
+  </aside>
+
+  <main class="workspace">
+    <header class="topbar">
+      <section class="setup">
+        <div>
+          <span class="label">Recommended</span>
+          <strong id="recommended-model">Assessing hardware</strong>
+          <small id="recommendation-reason"></small>
+        </div>
+        <div class="setup-actions">
+          <select id="model-select"></select>
+          <button id="download-model">Download</button>
+          <button id="start-server" class="primary">Start</button>
+          <button id="stop-server">Stop</button>
+        </div>
+      </section>
+      <section class="stats">
+        <div class="stat-head">
+          <strong>System</strong>
+          <span id="backend-label"></span>
+        </div>
+        <canvas id="pressure-chart" width="176" height="36"></canvas>
+        <div class="stat-grid">
+          <span>Memory</span><b id="memory-stat">-</b>
+          <span>Model</span><b id="model-stat">-</b>
+          <span>SSD</span><b id="disk-stat">-</b>
+          <span>Load</span><b id="load-stat">-</b>
+        </div>
+      </section>
+    </header>
+
+    <section id="download-panel" class="download-panel hidden">
+      <div><strong id="download-title"></strong><span id="download-state"></span></div>
+      <pre id="download-log"></pre>
+    </section>
+
+    <section id="settings-page" class="settings-page hidden">
+      <div class="settings-header">
+        <div>
+          <span class="label">Settings</span>
+          <h1>Tools</h1>
+        </div>
+        <button id="settings-close">Back to chat</button>
+      </div>
+      <form id="settings-form" class="settings-form">
+        <label for="brave-api-key">Brave Search API key</label>
+        <div class="settings-input-row">
+          <input id="brave-api-key" type="password" autocomplete="off" spellcheck="false" placeholder="Paste API key">
+          <button type="submit" class="primary">Save</button>
+          <button id="clear-brave-key" type="button">Clear</button>
+        </div>
+        <div class="settings-status">
+          <span id="brave-key-status">Not saved</span>
+          <span id="settings-save-state"></span>
+        </div>
+      </form>
+      <form id="exposure-form" class="settings-form">
+        <div class="settings-title-row">
+          <label>Server Exposure</label>
+          <span id="exposure-runtime" class="runtime-pill off">Disabled</span>
+        </div>
+        <div class="exposure-actions">
+          <button id="start-exposure" type="button" class="primary">Start</button>
+          <button id="stop-exposure" type="button">Stop</button>
+          <label class="tool-toggle">
+            <input id="expose-auth" type="checkbox" checked>
+            <span>Bearer token</span>
+          </label>
+        </div>
+        <div class="settings-input-row">
+          <input id="expose-api-key" type="password" autocomplete="off" spellcheck="false" placeholder="Bearer token">
+          <button type="submit" class="primary">Save</button>
+          <button id="generate-expose-key" type="button">Generate</button>
+          <button id="clear-expose-key" type="button">Clear</button>
+        </div>
+        <div class="endpoint-row">
+          <code id="openai-base-url">-</code>
+          <button id="copy-openai-url" type="button">Copy</button>
+        </div>
+        <div class="settings-status">
+          <span id="exposure-status">Disabled</span>
+          <span id="exposure-save-state"></span>
+        </div>
+      </form>
+    </section>
+
+    <section id="messages" class="messages"></section>
+
+    <footer class="composer">
+      <div class="composer-controls">
+        <select id="think-mode">
+          <option value="high">Think</option>
+          <option value="none">No think</option>
+          <option value="max">Max</option>
+        </select>
+        <input id="max-tokens" type="number" min="64" max="65536" step="64" value="8192" title="Auto-tuned max output tokens">
+        <label class="tool-toggle" title="Allow DS4 to call portable web tools from the UI bridge">
+          <input id="web-tools" type="checkbox" checked>
+          <span>Web</span>
+        </label>
+      </div>
+      <textarea id="prompt" rows="1" placeholder="Message DS Gateway"></textarea>
+      <button id="send" class="send">Send</button>
+    </footer>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
