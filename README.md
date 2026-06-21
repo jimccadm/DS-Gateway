@@ -7,7 +7,23 @@ against DS4 code. It uses only these DS4 surfaces:
 - `ds4-server` for OpenAI-compatible chat.
 - GGUF files and the `ds4flash.gguf` symlink for model status.
 
-Run it from this directory:
+For first-time setup, run:
+
+```sh
+./install.sh
+```
+
+The installer checks for an `antirez/ds4` checkout, offers to clone it if it is
+missing, prepares DS Gateway runtime folders, and writes a local launcher under
+`data/run-ds-gateway.sh`.
+
+After setup, run DS Gateway from this directory:
+
+```sh
+data/run-ds-gateway.sh
+```
+
+You can also start it manually:
 
 ```sh
 python3 ds4_ui.py --ds4-root ../ds4
