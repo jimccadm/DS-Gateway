@@ -237,6 +237,12 @@ def env_enabled(name, default=True):
     return value.strip().lower() not in ("0", "false", "no", "off")
 
 
+def web_tools_enabled():
+    if "DWARFSTAR_GATEWAY_WEB_TOOLS" in os.environ:
+        return env_enabled("DWARFSTAR_GATEWAY_WEB_TOOLS", True)
+    return env_enabled("DS4_UI_WEB_TOOLS", True)
+
+
 def clean_text(value):
     value = re.sub(r"(?is)<(script|style|noscript).*?</\1>", " ", value or "")
     value = re.sub(r"(?s)<[^>]+>", " ", value)
@@ -1299,7 +1305,7 @@ class UIHandler(BaseHTTPRequestHandler):
         if not ping["ok"]:
             self.sse_send("error", {"error": "DS4 server is not ready yet. Click Start and wait for the status to show online."})
             return
-        tools_requested = bool(body.get("tools_enabled", True)) and env_enabled("DS4_UI_WEB_TOOLS", True)
+        tools_requested = bool(body.get("tools_enabled", True)) and web_tools_enabled()
         if tools_requested:
             try:
                 return self.chat_with_tools(req, cid)
